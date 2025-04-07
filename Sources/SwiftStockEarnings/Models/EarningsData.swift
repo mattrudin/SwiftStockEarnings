@@ -7,16 +7,16 @@ public enum MarketTiming {
 }
 
 public struct EarningsData {
-    public let date: Date
+    public let date: Date?
     public let marketTiming: MarketTiming
-    public let projectedEarningsWindowStart: Date
-    public let projectedEarningsWindowEnd: Date
+    public let projectedEarningsWindowStart: Date?
+    public let projectedEarningsWindowEnd: Date?
     
     public init(
-        date: Date,
-        marketTiming: MarketTiming,
-        projectedEarningsWindowStart: Date,
-        projectedEarningsWindowEnd: Date
+        date: Date? = nil,
+        marketTiming: MarketTiming = .unknown,
+        projectedEarningsWindowStart: Date? = nil,
+        projectedEarningsWindowEnd: Date? = nil
     ) {
         self.date = date
         self.marketTiming = marketTiming
