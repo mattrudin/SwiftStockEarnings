@@ -28,6 +28,5 @@ let package = Package(
             name: "SwiftStockEarningsTests",
             dependencies: ["SwiftStockEarnings"]
         ),
-    ],
-    version: "0.1.0"
+    ]
 )
