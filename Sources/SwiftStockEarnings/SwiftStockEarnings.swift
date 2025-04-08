@@ -105,7 +105,7 @@ public struct SwiftStockEarnings {
             marketTiming: marketTiming,
             projectedEarningsWindowStart: windowStart,
             projectedEarningsWindowEnd: windowEnd,
-            isConfirmed: windowStart != nil && windowEnd != nil
+            isConfirmed: windowStart == nil && windowEnd == nil && date != nil
         )
     }
 }

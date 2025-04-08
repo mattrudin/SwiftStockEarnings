@@ -121,7 +121,7 @@ struct EarningsDataTests {
         #expect(earningsData.date != nil)
         #expect(earningsData.projectedEarningsWindowStart != nil)
         #expect(earningsData.projectedEarningsWindowEnd != nil)
-        #expect(earningsData.isConfirmed == true)
+        #expect(earningsData.isConfirmed == false)
     }
 
     @Test("Before Market Timing Test")
@@ -138,7 +138,7 @@ struct EarningsDataTests {
         #expect(earningsData.date != nil)
         #expect(earningsData.projectedEarningsWindowStart != nil)
         #expect(earningsData.projectedEarningsWindowEnd != nil)
-        #expect(earningsData.isConfirmed == true)
+        #expect(earningsData.isConfirmed == false)
     }
 
     @Test("Unknown Market Timing Test")
@@ -155,7 +155,7 @@ struct EarningsDataTests {
         #expect(earningsData.date != nil)
         #expect(earningsData.projectedEarningsWindowStart != nil)
         #expect(earningsData.projectedEarningsWindowEnd != nil)
-        #expect(earningsData.isConfirmed == true)
+        #expect(earningsData.isConfirmed == false)
     }
 
     @Test("Invalid Date Parsing Test")
@@ -215,7 +215,7 @@ struct EarningsDataTests {
         let earningsDataWithoutWindow = await earningsWithoutWindow.fetchEarningsData(for: "TEST")
         
         // Assert
-        #expect(earningsDataWithWindow.isConfirmed == true)
-        #expect(earningsDataWithoutWindow.isConfirmed == false)
+        #expect(earningsDataWithWindow.isConfirmed == false)
+        #expect(earningsDataWithoutWindow.isConfirmed == true)
     }
 }
