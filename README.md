@@ -56,6 +56,12 @@ Task {
        let windowEnd = earningsData.projectedEarningsWindowEnd {
         print("Projected earnings window: \(windowStart) to \(windowEnd)")
     }
+
+    if earningsData.isConfirmed {
+        print("Earnings date is confirmed")
+    } else {
+        print("Earnings date is not confirmed")
+    }
 }
 ```
 
@@ -76,6 +82,8 @@ The package returns an `EarningsData` struct containing:
 - `marketTiming`: When the earnings will be released (before market, after market, or unknown)
 - `projectedEarningsWindowStart`: Start of the projected earnings window (optional)
 - `projectedEarningsWindowEnd`: End of the projected earnings window (optional)
+- `isConfirmed`: Boolean indicating whether the earnings date is confirmed (the logic behind this: if both earnings-window are present, then the earnings date is not confirmed)
+
 
 ## Error Handling
 
