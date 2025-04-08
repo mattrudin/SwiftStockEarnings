@@ -121,6 +121,7 @@ struct EarningsDataTests {
         #expect(earningsData.date != nil)
         #expect(earningsData.projectedEarningsWindowStart != nil)
         #expect(earningsData.projectedEarningsWindowEnd != nil)
+        #expect(earningsData.isConfirmed == true)
     }
 
     @Test("Before Market Timing Test")
@@ -137,6 +138,7 @@ struct EarningsDataTests {
         #expect(earningsData.date != nil)
         #expect(earningsData.projectedEarningsWindowStart != nil)
         #expect(earningsData.projectedEarningsWindowEnd != nil)
+        #expect(earningsData.isConfirmed == true)
     }
 
     @Test("Unknown Market Timing Test")
@@ -153,6 +155,7 @@ struct EarningsDataTests {
         #expect(earningsData.date != nil)
         #expect(earningsData.projectedEarningsWindowStart != nil)
         #expect(earningsData.projectedEarningsWindowEnd != nil)
+        #expect(earningsData.isConfirmed == true)
     }
 
     @Test("Invalid Date Parsing Test")
@@ -169,5 +172,50 @@ struct EarningsDataTests {
         #expect(earningsData.projectedEarningsWindowStart == nil)
         #expect(earningsData.projectedEarningsWindowEnd == nil)
         #expect(earningsData.marketTiming == .afterMarket) // AC is still present in the HTML
+        #expect(earningsData.isConfirmed == false)
+    }
+
+    @Test("Is Confirmed Property Test")
+    func testIsConfirmedProperty() async {
+        // Arrange
+        let mockHTMLWithWindow = """
+        <html>
+            <body>
+                <table>
+                    <tr>
+                        <td>Next Earnings Date: <span class="stock_title"><b>May 1, 2025</b></span></td>
+                    </tr>
+                    <tr>
+                        <td>OS Projected Window: April 28, 2025 to May 3, 2025</td>
+                    </tr>
+                </table>
+            </body>
+        </html>
+        """
+
+        let mockHTMLWithoutWindow = """
+        <html>
+            <body>
+                <table>
+                    <tr>
+                        <td>Next Earnings Date: <span class="stock_title"><b>May 1, 2025</b></span></td>
+                    </tr>
+                </table>
+            </body>
+        </html>
+        """
+
+        let mockClientWithWindow = MockEarningsNetworkClient(mockHTML: mockHTMLWithWindow)
+        let mockClientWithoutWindow = MockEarningsNetworkClient(mockHTML: mockHTMLWithoutWindow)
+        let earningsWithWindow = SwiftStockEarnings(networkClient: mockClientWithWindow)
+        let earningsWithoutWindow = SwiftStockEarnings(networkClient: mockClientWithoutWindow)
+        
+        // Act
+        let earningsDataWithWindow = await earningsWithWindow.fetchEarningsData(for: "TEST")
+        let earningsDataWithoutWindow = await earningsWithoutWindow.fetchEarningsData(for: "TEST")
+        
+        // Assert
+        #expect(earningsDataWithWindow.isConfirmed == true)
+        #expect(earningsDataWithoutWindow.isConfirmed == false)
     }
 }

@@ -11,17 +11,20 @@ public struct EarningsData {
     public let marketTiming: MarketTiming
     public let projectedEarningsWindowStart: Date?
     public let projectedEarningsWindowEnd: Date?
+    public let isConfirmed: Bool
     
     public init(
         date: Date? = nil,
         marketTiming: MarketTiming = .unknown,
         projectedEarningsWindowStart: Date? = nil,
-        projectedEarningsWindowEnd: Date? = nil
+        projectedEarningsWindowEnd: Date? = nil,
+        isConfirmed: Bool = false
     ) {
         self.date = date
         self.marketTiming = marketTiming
         self.projectedEarningsWindowStart = projectedEarningsWindowStart
         self.projectedEarningsWindowEnd = projectedEarningsWindowEnd
+        self.isConfirmed = isConfirmed
     }
 }
 
