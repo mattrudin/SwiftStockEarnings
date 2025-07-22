@@ -24,68 +24,116 @@ public struct SwiftStockEarnings {
     private func parseEarningsData(from doc: Document) -> EarningsData {
         // Parse earnings date
         let date: Date? = {
-            guard let dateText = try? doc.select("td:contains(Next Earnings Date:)").first()?.text(),
-                  let dateMatch = dateText.range(of: "\\w+ \\d{1,2}, \\d{4}", options: .regularExpression) else {
+            guard let dateText = try? doc.select("td:contains(Next Earnings Date:)").first()?.text() else {
                 return nil
             }
             
-            let dateStr = String(dateText[dateMatch])
-            let dateFormatter = DateFormatter()
-            dateFormatter.dateFormat = "MMMM d, yyyy"
-            dateFormatter.timeZone = TimeZone.current
-            dateFormatter.locale = Locale(identifier: "en_US_POSIX")
-            
-            // Create date at noon in local timezone
-            if let date = dateFormatter.date(from: dateStr) {
-                var components = Calendar.current.dateComponents([.year, .month, .day], from: date)
-                components.hour = 12
-                components.minute = 0
-                components.second = 0
-                return Calendar.current.date(from: components)
+            // Prefer date after 'OS Estimate:' if present
+            let osEstimatePattern = #"OS Estimate:\s*([A-Za-z]{3,}\.? \d{1,2}, \d{4})"#
+            if let osEstimateMatch = dateText.range(of: osEstimatePattern, options: .regularExpression) {
+                let matchStr = String(dateText[osEstimateMatch])
+                if let dateMatch = matchStr.range(of: #"[A-Za-z]{3,}\.? \d{1,2}, \d{4}"#, options: .regularExpression) {
+                    let dateStr = String(matchStr[dateMatch])
+                    let dateFormatter = DateFormatter()
+                    dateFormatter.dateFormat = "MMM. d, yyyy"
+                    dateFormatter.timeZone = TimeZone.current
+                    dateFormatter.locale = Locale(identifier: "en_US_POSIX")
+                    // Try abbreviated month first
+                    if let date = dateFormatter.date(from: dateStr) {
+                        var components = Calendar.current.dateComponents([.year, .month, .day], from: date)
+                        components.hour = 12
+                        components.minute = 0
+                        components.second = 0
+                        return Calendar.current.date(from: components)
+                    } else {
+                        // Try full month name
+                        dateFormatter.dateFormat = "MMMM d, yyyy"
+                        if let date = dateFormatter.date(from: dateStr) {
+                            var components = Calendar.current.dateComponents([.year, .month, .day], from: date)
+                            components.hour = 12
+                            components.minute = 0
+                            components.second = 0
+                            return Calendar.current.date(from: components)
+                        }
+                    }
+                }
+            }
+            // Fallback: first date in string (abbreviated or full month)
+            if let dateMatch = dateText.range(of: #"[A-Za-z]{3,}\.? \d{1,2}, \d{4}"#, options: .regularExpression) {
+                let dateStr = String(dateText[dateMatch])
+                let dateFormatter = DateFormatter()
+                dateFormatter.dateFormat = "MMM. d, yyyy"
+                dateFormatter.timeZone = TimeZone.current
+                dateFormatter.locale = Locale(identifier: "en_US_POSIX")
+                if let date = dateFormatter.date(from: dateStr) {
+                    var components = Calendar.current.dateComponents([.year, .month, .day], from: date)
+                    components.hour = 12
+                    components.minute = 0
+                    components.second = 0
+                    return Calendar.current.date(from: components)
+                } else {
+                    dateFormatter.dateFormat = "MMMM d, yyyy"
+                    if let date = dateFormatter.date(from: dateStr) {
+                        var components = Calendar.current.dateComponents([.year, .month, .day], from: date)
+                        components.hour = 12
+                        components.minute = 0
+                        components.second = 0
+                        return Calendar.current.date(from: components)
+                    }
+                }
             }
             return nil
         }()
         
         // Parse projected window
         let (windowStart, windowEnd): (Date?, Date?) = {
-            guard let windowText = try? doc.select("td:contains(OS Projected Window:)").first()?.text(),
-                  let windowMatch = windowText.range(of: "OS Projected Window: \\w+ \\d{1,2}, \\d{4} to \\w+ \\d{1,2}, \\d{4}", options: .regularExpression) else {
+            guard let windowText = try? doc.select("td:contains(OS Projected Window:)").first()?.text() else {
                 return (nil, nil)
             }
-            
-            let windowStr = String(windowText[windowMatch])
-            let windowComponents = windowStr.components(separatedBy: " to ")
-            guard windowComponents.count == 2,
-                  let startStr = windowComponents[0].components(separatedBy: "OS Projected Window: ").last else {
-                return (nil, nil)
-            }
-            
-            let endStr = windowComponents[1]
-            let windowFormatter = DateFormatter()
-            windowFormatter.dateFormat = "MMMM d, yyyy"
-            windowFormatter.timeZone = TimeZone.current
-            windowFormatter.locale = Locale(identifier: "en_US_POSIX")
-            
-            // Create dates at noon in local timezone
-            let createLocalDate: (String) -> Date? = { dateStr in
-                if let date = windowFormatter.date(from: dateStr) {
-                    var components = Calendar.current.dateComponents([.year, .month, .day], from: date)
-                    components.hour = 12
-                    components.minute = 0
-                    components.second = 0
-                    return Calendar.current.date(from: components)
+            // Updated regex to support abbreviated and full month names
+            let windowPattern = #"OS Projected Window: ([A-Za-z]{3,}\.? \d{1,2}, \d{4}) to ([A-Za-z]{3,}\.? \d{1,2}, \d{4})"#
+            let regex = try? NSRegularExpression(pattern: windowPattern)
+            if let match = regex?.firstMatch(in: windowText, options: [], range: NSRange(windowText.startIndex..., in: windowText)),
+               match.numberOfRanges == 3,
+               let startRange = Range(match.range(at: 1), in: windowText),
+               let endRange = Range(match.range(at: 2), in: windowText) {
+                let startStr = String(windowText[startRange])
+                let endStr = String(windowText[endRange])
+                let windowFormatter = DateFormatter()
+                windowFormatter.timeZone = TimeZone.current
+                windowFormatter.locale = Locale(identifier: "en_US_POSIX")
+                // Helper to try both abbreviated and full month
+                let createLocalDate: (String) -> Date? = { dateStr in
+                    windowFormatter.dateFormat = "MMM. d, yyyy"
+                    if let date = windowFormatter.date(from: dateStr) {
+                        var components = Calendar.current.dateComponents([.year, .month, .day], from: date)
+                        components.hour = 12
+                        components.minute = 0
+                        components.second = 0
+                        return Calendar.current.date(from: components)
+                    } else {
+                        windowFormatter.dateFormat = "MMMM d, yyyy"
+                        if let date = windowFormatter.date(from: dateStr) {
+                            var components = Calendar.current.dateComponents([.year, .month, .day], from: date)
+                            components.hour = 12
+                            components.minute = 0
+                            components.second = 0
+                            return Calendar.current.date(from: components)
+                        }
+                    }
+                    return nil
                 }
-                return nil
+                return (
+                    createLocalDate(startStr),
+                    createLocalDate(endStr)
+                )
             }
-            
-            return (
-                createLocalDate(startStr),
-                createLocalDate(endStr)
-            )
+            return (nil, nil)
         }()
         
         // Determine market timing
         let marketTiming: MarketTiming = {
+            // 1. Versuche wie bisher über <font>-Tag zu extrahieren
             if let timingElements = try? doc.select("span.stock_title font") {
                 for element in timingElements {
                     if let timingText = try? element.text().trimmingCharacters(in: .whitespacesAndNewlines) {
@@ -94,6 +142,18 @@ public struct SwiftStockEarnings {
                         } else if timingText == "BO" {
                             return .beforeMarket
                         }
+                    }
+                }
+            }
+            // 2. Fallback: Suche direkt im relevanten Text nach AC/BO
+            if let dateText = try? doc.select("td:contains(Next Earnings Date:)").first()?.text() {
+                let pattern = #"(AC|BO)\b"#
+                if let match = dateText.range(of: pattern, options: .regularExpression) {
+                    let timing = String(dateText[match])
+                    if timing == "AC" {
+                        return .afterMarket
+                    } else if timing == "BO" {
+                        return .beforeMarket
                     }
                 }
             }
