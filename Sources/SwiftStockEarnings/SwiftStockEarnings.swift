@@ -33,7 +33,9 @@ public struct SwiftStockEarnings {
             if let osEstimateMatch = dateText.range(of: osEstimatePattern, options: .regularExpression) {
                 let matchStr = String(dateText[osEstimateMatch])
                 if let dateMatch = matchStr.range(of: #"[A-Za-z]{3,}\.? \d{1,2}, \d{4}"#, options: .regularExpression) {
-                    let dateStr = String(matchStr[dateMatch])
+                    var dateStr = String(matchStr[dateMatch])
+                    // Fix: Ersetze 'Sept.' durch 'Sep.' für DateFormatter-Kompatibilität
+                    dateStr = dateStr.replacingOccurrences(of: "Sept.", with: "Sep.")
                     let dateFormatter = DateFormatter()
                     dateFormatter.dateFormat = "MMM. d, yyyy"
                     dateFormatter.timeZone = TimeZone.current
@@ -60,7 +62,9 @@ public struct SwiftStockEarnings {
             }
             // Fallback: first date in string (abbreviated or full month)
             if let dateMatch = dateText.range(of: #"[A-Za-z]{3,}\.? \d{1,2}, \d{4}"#, options: .regularExpression) {
-                let dateStr = String(dateText[dateMatch])
+                var dateStr = String(dateText[dateMatch])
+                // Fix: Ersetze 'Sept.' durch 'Sep.' für DateFormatter-Kompatibilität
+                dateStr = dateStr.replacingOccurrences(of: "Sept.", with: "Sep.")
                 let dateFormatter = DateFormatter()
                 dateFormatter.dateFormat = "MMM. d, yyyy"
                 dateFormatter.timeZone = TimeZone.current
@@ -104,8 +108,9 @@ public struct SwiftStockEarnings {
                 windowFormatter.locale = Locale(identifier: "en_US_POSIX")
                 // Helper to try both abbreviated and full month
                 let createLocalDate: (String) -> Date? = { dateStr in
+                    var dateStrFixed = dateStr.replacingOccurrences(of: "Sept.", with: "Sep.")
                     windowFormatter.dateFormat = "MMM. d, yyyy"
-                    if let date = windowFormatter.date(from: dateStr) {
+                    if let date = windowFormatter.date(from: dateStrFixed) {
                         var components = Calendar.current.dateComponents([.year, .month, .day], from: date)
                         components.hour = 12
                         components.minute = 0
@@ -113,7 +118,7 @@ public struct SwiftStockEarnings {
                         return Calendar.current.date(from: components)
                     } else {
                         windowFormatter.dateFormat = "MMMM d, yyyy"
-                        if let date = windowFormatter.date(from: dateStr) {
+                        if let date = windowFormatter.date(from: dateStrFixed) {
                             var components = Calendar.current.dateComponents([.year, .month, .day], from: date)
                             components.hour = 12
                             components.minute = 0
